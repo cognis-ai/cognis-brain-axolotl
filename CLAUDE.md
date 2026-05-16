@@ -69,6 +69,10 @@ This repo doesn't have a HTTP server of its own — it's a CLI. Bridge submits j
 
 The integration plugin (`src/axolotl/integrations/cognis_bridge/`) handles this. No JWT logic in upstream files.
 
+## Cost policy
+
+This fork inherits Cognis's managed-SaaS cost policy — see `../cognis-platform/docs/specs/cost-policy.md` for the full per-fork list and rationale. For `cognis-brain-axolotl` specifically, in production deploys DO NOT set: `WANDB_API_KEY` (set `WANDB_DISABLED=true` or point at a self-host instead), `POSTHOG_API_KEY`. Axolotl defaults to W&B Cloud; disable unless a customer explicitly pays for it.
+
 ## What NOT to do
 
 - Don't restore stripped trap directories (currently there are none — keep it that way)
