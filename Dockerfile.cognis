@@ -1,0 +1,43 @@
+# =============================================================================
+# Cognis Brain — Axolotl fine-tune pod image
+# Wraps upstream Axolotl with the Cognis CLI entrypoint + telemetry-off
+# defaults per cognis-platform/docs/specs/cost-policy.md.
+# =============================================================================
+FROM axolotlai/axolotl:main-latest
+
+LABEL maintainer="Cognis AI <support@cognisai.com>"
+LABEL org.opencontainers.image.source="https://github.com/cognis-ai/cognis-brain-axolotl"
+LABEL org.opencontainers.image.title="Cognis Brain — Axolotl"
+LABEL org.opencontainers.image.description="Cognis Brain fine-tune pod image. Forked from axolotl-ai-cloud/axolotl (Apache-2.0). Pulls jobs from Cognis Bridge, runs QLoRA training, hands adapter to vLLM."
+LABEL org.opencontainers.image.vendor="Cognis AI"
+
+# Cognis defaults + telemetry off per cost-policy.md. Customer keeps the
+# right to enable W&B against their own self-host by overriding these.
+ENV COGNIS_BRANDING=on \
+    COGNIS_PRODUCT_NAME="Cognis Brain" \
+    COGNIS_DOCS_URL="https://cognisai.com/docs/brain" \
+    COGNIS_PORTAL_URL="https://app.cognisai.com/dashboard/brain" \
+    COGNIS_SUPPORT_EMAIL="support@cognisai.com" \
+    WANDB_DISABLED=true \
+    AXOLOTL_DO_NOT_TRACK=1 \
+    DO_NOT_TRACK=1 \
+    POSTHOG_API_KEY="" \
+    POSTHOG_HOST=""
+
+# AWS CLI for adapter upload to S3 (v1 path; v1.5 swaps for boto3).
+RUN pip install --no-cache-dir awscli aiohttp pyyaml
+
+# Bake in the Cognis cognis/ subpackage.
+# NOTE: a Docker COPY cannot use shell redirection/`||` (they'd be parsed as extra
+# source paths) and cannot expand a glob like `python*` in its destination. So we
+# COPY to a fixed overlay path, then install it into the active site-packages at the
+# real (resolved) path inside a RUN, where the shell can resolve the python version.
+COPY src/axolotl/cognis /workspace/cognis-overlay/axolotl/cognis
+RUN set -eux; \
+    AXOLOTL_DIR="$(python -c 'import os, axolotl; print(os.path.dirname(axolotl.__file__))')"; \
+    rm -rf "${AXOLOTL_DIR}/cognis"; \
+    cp -r /workspace/cognis-overlay/axolotl/cognis "${AXOLOTL_DIR}/cognis"; \
+    python -c 'import axolotl.cognis.cli'  # fail the build early if the entrypoint is broken
+
+# Production entrypoint: pull next queued job from Bridge, run, post back.
+CMD ["python", "-m", "axolotl.cognis.cli"]
