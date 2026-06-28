@@ -1,3 +1,7 @@
+# DEPRECATED ⚰️
+
+This soft-fork is retired. Use the consolidated cognis-brain product (vLLM pinned image + reused Voice RAG + deferred Axolotl) instead.
+
 <p align="center">
     <picture>
         <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/axolotl-ai-cloud/axolotl/887513285d98132142bf5db2a74eb5e0928787f1/image/axolotl_logo_digital_white.svg">
